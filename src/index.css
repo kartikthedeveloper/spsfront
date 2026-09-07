@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-50 text-ink-950 font-sans antialiased;
+}
+
+::selection {
+  @apply bg-marigold-100 text-ink-900;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7d3e0 transparent;
+}
+
+.card {
+  @apply bg-white rounded-xl2 shadow-card border border-ink-100;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+}
+
+.btn-primary {
+  @apply btn bg-ink-800 text-white hover:bg-ink-700 focus-visible:ring-ink-800;
+}
+
+.btn-accent {
+  @apply btn bg-marigold-500 text-white hover:bg-marigold-600 focus-visible:ring-marigold-500;
+}
+
+.btn-ghost {
+  @apply btn bg-transparent text-ink-800 hover:bg-ink-100;
+}
+
+.input {
+  @apply w-full rounded-lg border border-ink-100 bg-white px-3 py-2 text-sm text-ink-950 placeholder:text-ink-600/50 focus:outline-none focus:ring-2 focus:ring-ink-800/30 focus:border-ink-800;
+}
+
+.label {
+  @apply block text-xs font-semibold uppercase tracking-wide text-ink-700 mb-1;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
