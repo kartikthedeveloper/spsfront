@@ -50,7 +50,7 @@ export default function Academics() {
     // Fetch trainers (users with role 'trainer' or 'staff')
     // If you have a dedicated /users endpoint, use it; otherwise adjust
     api
-      .get('/users?roles=trainer,staff')
+      .get('/users?roles=trainer,staff,admin')
       .then(({ data }) => setTrainers(data.users || []))
       .catch(() => setTrainers([]));
   };
