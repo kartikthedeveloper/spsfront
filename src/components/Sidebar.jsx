@@ -23,13 +23,13 @@ const navItems = [
   { to: '/batches', label: 'Batches', icon: GraduationCap, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/students', label: 'Students', icon: Users, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/fees', label: 'Fee Management', icon: Wallet, roles: ['admin', 'branch_manager', 'staff'] },
-  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['admin', 'branch_manager', 'staff'] },
+  // { to: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/leads', label: 'Leads', icon: Target, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/salary', label: 'Salary', icon: Banknote, roles: ['admin', 'branch_manager'] },
   { to: '/reports', label: 'Reports', icon: FileBarChart, roles: ['admin', 'branch_manager'] },
-  { to: '/campaigns', label: 'Campaigns', icon: Megaphone, roles: ['admin', 'branch_manager'] },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon, roles: ['admin'] },
+  // { to: '/campaigns', label: 'Campaigns', icon: Megaphone, roles: ['admin', 'branch_manager'] },
+  // { to: '/settings', label: 'Settings', icon: SettingsIcon, roles: ['admin'] },
 ];
 
 export default function Sidebar() {
@@ -216,55 +216,6 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* ================= BOTTOM PROFILE / SYSTEM CARD ================= */}
-      <div className="relative px-4 pb-4 pt-3">
-        <div
-          className="
-            relative
-            rounded-2xl
-            p-3
-            bg-white/[0.055]
-            border border-white/10
-            shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_8px_25px_rgba(0,0,0,0.18)]
-            backdrop-blur-xl
-            overflow-hidden
-            group
-          "
-        >
-          {/* Glow */}
-          <div className="absolute -right-5 -bottom-8 h-20 w-20 rounded-full bg-purple-500/20 blur-2xl group-hover:bg-purple-500/30 transition-all duration-500" />
-
-          <div className="relative flex items-center gap-3">
-            <div
-              className="
-                h-9 w-9 rounded-xl
-                bg-gradient-to-br from-violet-400 to-indigo-600
-                flex items-center justify-center
-                text-xs font-bold
-                shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_5px_12px_rgba(79,70,229,0.3)]
-              "
-            >
-              SP
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-white">
-                Success Point CRM
-              </p>
-
-              <p className="text-[9px] text-white/35 mt-0.5">
-                Management System
-              </p>
-            </div>
-
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-          </div>
-        </div>
-
-        <p className="text-center text-[8px] text-white/20 mt-2 tracking-wider">
-          SUCCESS POINT • CRM
-        </p>
-      </div>
     </aside>
   );
 }

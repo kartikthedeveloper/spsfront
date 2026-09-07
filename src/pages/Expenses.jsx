@@ -44,7 +44,32 @@ export default function Expenses() {
         title="Expense Management"
         description={`Total recorded: ₹${total.toLocaleString('en-IN')}`}
         action={
-          <button className="btn-accent" onClick={() => setOpen(true)}>
+          <button className="group
+              inline-flex items-center gap-2
+
+              px-4 py-2.5
+              rounded-xl
+
+              bg-gradient-to-r
+              from-violet-600
+              to-indigo-600
+
+              text-white
+              text-xs
+              font-bold
+
+              border border-violet-500/20
+
+              shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_5px_0_#4338CA,0_10px_20px_rgba(79,70,229,0.18)]
+
+              transition-all duration-300
+
+              hover:-translate-y-1
+              hover:shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_6px_0_#4338CA,0_14px_25px_rgba(79,70,229,0.25)]
+
+              active:translate-y-[2px]
+              active:shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_2px_0_#4338CA,0_5px_10px_rgba(79,70,229,0.15)]
+            " onClick={() => setOpen(true)}>
             <Plus size={16} /> Add Expense
           </button>
         }
