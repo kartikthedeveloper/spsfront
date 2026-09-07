@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+
 import {
-  FileSpreadsheet,
   Download,
   FileText,
-  ChevronDown,
   BarChart3,
   IndianRupee,
-  Users,
   ClipboardCheck,
   UserPlus,
   Wallet,
   AlertCircle,
-  CheckCircle2,
   Loader2,
-  RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 
 import jsPDF from 'jspdf';
@@ -24,62 +21,75 @@ import AppShell from '../components/AppShell';
 import { PageHeader } from '../components/ui';
 import api from '../api/axios';
 
+/* =========================================================
+   REPORT CONFIGURATION
+========================================================= */
+
 const reports = [
   {
     key: 'fees',
     label: 'Fee Collection Report',
     description:
-      'Every payment received, with receipt numbers, students and payment modes.',
+      'Complete payment collection details with receipt number, student, amount and payment mode.',
     icon: IndianRupee,
-    gradient: 'from-emerald-500 to-green-600',
     bg: 'bg-emerald-50',
     text: 'text-emerald-600',
+    gradient: 'from-emerald-500 to-green-600',
   },
+
   {
     key: 'fee-defaulters',
     label: 'Fee Defaulters Report',
     description:
-      'Students with pending fee balances and outstanding amounts.',
+      'Students with outstanding fee balances, total payable, paid amount and pending amount.',
     icon: AlertCircle,
-    gradient: 'from-red-500 to-rose-600',
     bg: 'bg-red-50',
     text: 'text-red-600',
+    gradient: 'from-red-500 to-rose-600',
   },
+
   {
     key: 'attendance',
     label: 'Attendance Report',
     description:
-      'Daily attendance records across batches and students.',
+      'Attendance records with date, student, admission ID, batch and attendance status.',
     icon: ClipboardCheck,
-    gradient: 'from-blue-500 to-indigo-600',
     bg: 'bg-blue-50',
     text: 'text-blue-600',
+    gradient: 'from-blue-500 to-indigo-600',
   },
+
   {
     key: 'leads',
     label: 'Lead Report',
     description:
-      'All leads with stage, source, priority and ownership.',
+      'Complete lead information including source, priority, stage, course and owner.',
     icon: UserPlus,
-    gradient: 'from-violet-500 to-purple-600',
     bg: 'bg-violet-50',
     text: 'text-violet-600',
+    gradient: 'from-violet-500 to-purple-600',
   },
+
   {
     key: 'expenses',
     label: 'Expense Report',
     description:
-      'All recorded expenses with categories, amounts and dates.',
+      'All recorded expenses with date, category, title, amount and recorded by.',
     icon: Wallet,
-    gradient: 'from-orange-500 to-amber-600',
     bg: 'bg-orange-50',
     text: 'text-orange-600',
+    gradient: 'from-orange-500 to-amber-600',
   },
 ];
+
+/* =========================================================
+   PDF TABLE CONFIGURATION
+========================================================= */
 
 const reportColumns = {
   fees: {
     title: 'Fee Collection Report',
+
     columns: [
       'Date',
       'Receipt No.',
@@ -88,20 +98,20 @@ const reportColumns = {
       'Amount',
       'Mode',
     ],
+
     mapRow: (item) => [
       formatDate(item.paymentDate || item.date),
       item.receiptNumber || '-',
-      item.student?.name || item.studentName || '-',
-      item.student?.admissionId ||
-        item.admissionId ||
-        '-',
-      formatCurrency(item.amountPaid || item.amount),
-      formatValue(item.paymentMode),
+      item.student?.name || item.studentName || item.student || '-',
+      item.student?.admissionId || item.admissionId || '-',
+      formatCurrency(item.amountPaid ?? item.amount),
+      formatValue(item.paymentMode || item.mode),
     ],
   },
 
   'fee-defaulters': {
     title: 'Fee Defaulters Report',
+
     columns: [
       'Student',
       'Admission ID',
@@ -110,25 +120,27 @@ const reportColumns = {
       'Paid',
       'Pending',
     ],
+
     mapRow: (item) => [
-      item.student?.name || item.studentName || '-',
+      item.student?.name || item.studentName || item.name || '-',
       item.student?.admissionId ||
         item.admissionId ||
         '-',
-      item.course?.name || item.courseName || '-',
+      item.course?.name || item.courseName || item.course || '-',
       formatCurrency(
-        item.totalFee ||
-          item.totalAmount ||
-          item.feeAmount
+        item.totalFee ??
+          item.totalAmount ??
+          item.feeAmount ??
+          item.payable
       ),
       formatCurrency(
-        item.paid ||
-          item.totalPaid ||
+        item.paid ??
+          item.totalPaid ??
           item.amountPaid
       ),
       formatCurrency(
-        item.pending ||
-          item.pendingAmount ||
+        item.pending ??
+          item.pendingAmount ??
           item.balance
       ),
     ],
@@ -136,6 +148,7 @@ const reportColumns = {
 
   attendance: {
     title: 'Attendance Report',
+
     columns: [
       'Date',
       'Student',
@@ -143,19 +156,21 @@ const reportColumns = {
       'Batch',
       'Status',
     ],
+
     mapRow: (item) => [
       formatDate(item.date || item.attendanceDate),
-      item.student?.name || item.studentName || '-',
+      item.student?.name || item.studentName || item.student || '-',
       item.student?.admissionId ||
         item.admissionId ||
         '-',
-      item.batch?.name || item.batchName || '-',
+      item.batch?.name || item.batchName || item.batch || '-',
       formatValue(item.status),
     ],
   },
 
   leads: {
     title: 'Lead Report',
+
     columns: [
       'Name',
       'Phone',
@@ -165,23 +180,27 @@ const reportColumns = {
       'Stage',
       'Owner',
     ],
+
     mapRow: (item) => [
       item.fullName || item.name || '-',
       item.phone || '-',
       item.interestedCourse?.name ||
         item.course?.name ||
+        item.courseName ||
         '-',
       formatValue(item.source),
       formatValue(item.priority),
       formatValue(item.stage),
       item.assignedTo?.name ||
         item.leadOwner?.name ||
+        item.owner?.name ||
         '-',
     ],
   },
 
   expenses: {
     title: 'Expense Report',
+
     columns: [
       'Date',
       'Title',
@@ -189,15 +208,22 @@ const reportColumns = {
       'Amount',
       'Recorded By',
     ],
+
     mapRow: (item) => [
       formatDate(item.date),
       item.title || '-',
       formatValue(item.category),
       formatCurrency(item.amount),
-      item.recordedBy?.name || '-',
+      item.recordedBy?.name ||
+        item.recordedByName ||
+        '-',
     ],
   },
 };
+
+/* =========================================================
+   FORMAT HELPERS
+========================================================= */
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
@@ -209,55 +235,54 @@ function formatDate(value) {
   if (!value) return '-';
 
   try {
-    return new Date(value).toLocaleDateString(
-      'en-IN',
-      {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }
-    );
+    return new Date(value).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   } catch {
     return '-';
   }
 }
 
 function formatValue(value) {
-  if (!value) return '-';
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
 
   return String(value)
     .replaceAll('_', ' ')
-    .replace(/\b\w/g, (char) =>
-      char.toUpperCase()
-    );
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function extractRows(data, key) {
-  /*
-   * Supports common API response shapes.
-   * If your backend returns:
-   * { payments: [...] }
-   * { expenses: [...] }
-   * etc., it will pick those automatically.
-   */
+/* =========================================================
+   EXTRACT ROWS FROM API RESPONSE
+========================================================= */
 
+function extractRows(data, key) {
   const possibleKeys = {
-    fees: ['payments', 'fees', 'data'],
+    fees: ['rows', 'payments', 'fees', 'data'],
+
     'fee-defaulters': [
+      'rows',
       'defaulters',
       'students',
       'data',
     ],
+
     attendance: [
+      'rows',
       'attendance',
       'records',
       'data',
     ],
-    leads: ['leads', 'data'],
-    expenses: ['expenses', 'data'],
+
+    leads: ['rows', 'leads', 'data'],
+
+    expenses: ['rows', 'expenses', 'data'],
   };
 
-  const keys = possibleKeys[key] || ['data'];
+  const keys = possibleKeys[key] || ['rows', 'data'];
 
   for (const responseKey of keys) {
     if (Array.isArray(data?.[responseKey])) {
@@ -272,77 +297,122 @@ function extractRows(data, key) {
   return [];
 }
 
-function getFileName(key) {
-  return `${key}-report`;
-}
+/* =========================================================
+   PDF HEADER
+========================================================= */
 
-function addPdfHeader(doc, title) {
+function addPdfHeader(doc, title, count = 0) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Header background
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageWidth, 42, 'F');
+  /* ---------- Header Background ---------- */
 
-  // Logo box
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageWidth, 43, 'F');
+
+  /* ---------- Decorative Accent ---------- */
+
+  doc.setFillColor(99, 102, 241);
+  doc.rect(0, 40, pageWidth, 3, 'F');
+
+  /* ---------- Logo ---------- */
+
   doc.setFillColor(255, 255, 255);
+
   doc.roundedRect(
     14,
-    9,
-    24,
-    24,
-    5,
-    5,
+    8,
+    26,
+    26,
+    6,
+    6,
     'F'
   );
 
   doc.setTextColor(79, 70, 229);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(17);
-  doc.text('S', 26, 26, {
+  doc.setFontSize(18);
+
+  doc.text('S', 27, 26, {
     align: 'center',
   });
 
-  // Institute name
+  /* ---------- Institute Name ---------- */
+
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(17);
-  doc.text('SUCCESS POINT', 46, 18);
+
+  doc.text('SUCCESS POINT', 47, 18);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(203, 213, 225);
+
   doc.text(
     'Education & Training Institute',
-    46,
+    47,
     27
   );
 
-  // Report title
+  /* ---------- Report Title ---------- */
+
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(title, 14, 56);
+  doc.setFontSize(16);
 
-  // Generated date
+  doc.text(title, 14, 57);
+
+  /* ---------- Generated Date ---------- */
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
 
   doc.text(
-    `Generated on ${new Date().toLocaleString(
-      'en-IN',
-      {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }
-    )}`,
+    `Generated on ${new Date().toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`,
     14,
-    63
+    64
   );
+
+  /* ---------- Record Count ---------- */
+
+  if (count >= 0) {
+    doc.setFillColor(238, 242, 255);
+
+    doc.roundedRect(
+      pageWidth - 55,
+      50,
+      41,
+      16,
+      4,
+      4,
+      'F'
+    );
+
+    doc.setTextColor(79, 70, 229);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+
+    doc.text(
+      `${count} Records`,
+      pageWidth - 34.5,
+      60,
+      {
+        align: 'center',
+      }
+    );
+  }
 }
+
+/* =========================================================
+   PDF FOOTER
+========================================================= */
 
 function addPdfFooter(doc) {
   const pageCount =
@@ -357,7 +427,10 @@ function addPdfFooter(doc) {
     const pageHeight =
       doc.internal.pageSize.getHeight();
 
+    /* ---------- Footer Line ---------- */
+
     doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
 
     doc.line(
       14,
@@ -365,6 +438,8 @@ function addPdfFooter(doc) {
       pageWidth - 14,
       pageHeight - 17
     );
+
+    /* ---------- Footer Left ---------- */
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
@@ -375,6 +450,19 @@ function addPdfFooter(doc) {
       14,
       pageHeight - 10
     );
+
+    /* ---------- Footer Center ---------- */
+
+    doc.text(
+      'Generated from CRM',
+      pageWidth / 2,
+      pageHeight - 10,
+      {
+        align: 'center',
+      }
+    );
+
+    /* ---------- Page Number ---------- */
 
     doc.text(
       `Page ${page} of ${pageCount}`,
@@ -387,6 +475,10 @@ function addPdfFooter(doc) {
   }
 }
 
+/* =========================================================
+   GENERATE PDF
+========================================================= */
+
 function generatePdf(key, rows) {
   const config = reportColumns[key];
 
@@ -396,19 +488,34 @@ function generatePdf(key, rows) {
     );
   }
 
+  /* ---------- Orientation ---------- */
+
+  const orientation =
+    config.columns.length > 6
+      ? 'landscape'
+      : 'portrait';
+
   const doc = new jsPDF({
-    orientation:
-      config.columns.length > 6
-        ? 'landscape'
-        : 'portrait',
+    orientation,
     unit: 'mm',
     format: 'a4',
   });
 
-  addPdfHeader(doc, config.title);
+  const pageWidth =
+    doc.internal.pageSize.getWidth();
+
+  /* ---------- Header ---------- */
+
+  addPdfHeader(
+    doc,
+    config.title,
+    rows.length
+  );
+
+  /* ---------- Table ---------- */
 
   autoTable(doc, {
-    startY: 72,
+    startY: 73,
 
     head: [config.columns],
 
@@ -418,119 +525,243 @@ function generatePdf(key, rows) {
 
     theme: 'grid',
 
+    margin: {
+      top: 73,
+      left: 14,
+      right: 14,
+      bottom: 23,
+    },
+
     styles: {
       font: 'helvetica',
-      fontSize: 8,
+      fontSize: 7.5,
       cellPadding: 3,
+
       textColor: [30, 41, 59],
+
       lineColor: [226, 232, 240],
       lineWidth: 0.2,
+
       valign: 'middle',
+
+      overflow: 'linebreak',
     },
 
     headStyles: {
       fillColor: [79, 70, 229],
       textColor: [255, 255, 255],
+
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 7.5,
+
       halign: 'left',
+      valign: 'middle',
+
+      cellPadding: 3.2,
+    },
+
+    bodyStyles: {
+      minCellHeight: 8,
     },
 
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
 
-    margin: {
-      left: 14,
-      right: 14,
-      top: 72,
-      bottom: 22,
+    /* ---------- Column Alignment ---------- */
+
+    columnStyles: {
+      0: {
+        cellWidth:
+          config.columns.length <= 5
+            ? 30
+            : 25,
+      },
     },
 
+    /* ---------- Page Header ---------- */
+
     didDrawPage: () => {
-      addPdfHeader(doc, config.title);
+      addPdfHeader(
+        doc,
+        config.title,
+        rows.length
+      );
+    },
+
+    /* ---------- Footer Space ---------- */
+
+    didParseCell: (data) => {
+      if (
+        data.section === 'body' &&
+        data.column.index ===
+          config.columns.length - 1
+      ) {
+        data.cell.styles.fontStyle =
+          'normal';
+      }
     },
   });
 
+  /* ---------- Footer ---------- */
+
   addPdfFooter(doc);
 
-  doc.save(`${getFileName(key)}.pdf`);
+  /* ---------- Save ---------- */
+
+  const fileName = `${key}-report-${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`;
+
+  doc.save(fileName);
 }
+
+/* =========================================================
+   REPORT CARD
+========================================================= */
 
 function ReportCard({
   report,
   downloading,
-  onDownloadExcel,
   onDownloadPdf,
 }) {
   const Icon = report.icon;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-ink-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-ink-200 hover:shadow-xl">
-      {/* Decorative circle */}
-      <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-ink-50 opacity-60 transition-transform duration-500 group-hover:scale-150" />
+    <div
+      className="
+        group relative overflow-hidden
+        rounded-2xl border border-ink-100
+        bg-white p-5
+        shadow-sm
+        transition-all duration-300
+        hover:-translate-y-1
+        hover:border-indigo-200
+        hover:shadow-xl
+      "
+    >
+      {/* Decorative Background */}
+
+      <div
+        className="
+          absolute -right-14 -top-14
+          h-36 w-36 rounded-full
+          bg-indigo-50
+          opacity-70
+          transition-transform duration-500
+          group-hover:scale-150
+        "
+      />
 
       <div className="relative">
-        {/* Header */}
+        {/* ---------- Top ---------- */}
+
         <div className="flex items-start justify-between gap-3">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-2xl ${report.bg} ${report.text}`}
+            className={`
+              flex h-12 w-12 items-center
+              justify-center rounded-2xl
+              ${report.bg} ${report.text}
+              shadow-sm
+            `}
           >
             <Icon size={21} />
           </div>
 
-          <div className="rounded-full bg-ink-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-ink-500">
-            Report
+          <div
+            className="
+              rounded-full
+              bg-indigo-50
+              px-2.5 py-1
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-wider
+              text-indigo-600
+            "
+          >
+            PDF
           </div>
         </div>
 
-        {/* Content */}
+        {/* ---------- Content ---------- */}
+
         <div className="mt-5">
-          <h3 className="text-sm font-bold text-ink-950">
+          <h3
+            className="
+              text-sm
+              font-bold
+              text-ink-950
+            "
+          >
             {report.label}
           </h3>
 
-          <p className="mt-1.5 min-h-[38px] text-xs leading-relaxed text-ink-500">
+          <p
+            className="
+              mt-1.5
+              min-h-[52px]
+              text-xs
+              leading-relaxed
+              text-ink-500
+            "
+          >
             {report.description}
           </p>
         </div>
 
-        {/* Bottom */}
-        <div className="mt-5 flex flex-col gap-2 border-t border-ink-100 pt-4 sm:flex-row">
-          <button
-            type="button"
-            disabled={!!downloading}
-            onClick={onDownloadExcel}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {downloading === 'excel' ? (
-              <Loader2
-                size={15}
-                className="animate-spin"
-              />
-            ) : (
-              <FileSpreadsheet size={15} />
-            )}
+        {/* ---------- Button ---------- */}
 
-            Excel
-          </button>
-
+        <div
+          className="
+            mt-5
+            border-t border-ink-100
+            pt-4
+          "
+        >
           <button
             type="button"
             disabled={!!downloading}
             onClick={onDownloadPdf}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            className={`
+              relative
+              flex w-full
+              items-center justify-center
+              gap-2
+              overflow-hidden
+              rounded-xl
+              bg-gradient-to-r
+              ${report.gradient}
+              px-4 py-3
+              text-xs
+              font-bold
+              text-white
+              shadow-md
+              transition-all
+              duration-300
+              hover:-translate-y-0.5
+              hover:shadow-lg
+              active:translate-y-0
+              disabled:cursor-not-allowed
+              disabled:opacity-60
+            `}
           >
             {downloading === 'pdf' ? (
-              <Loader2
-                size={15}
-                className="animate-spin"
-              />
-            ) : (
-              <FileText size={15} />
-            )}
+              <>
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                />
 
-            PDF
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+
+                Download PDF
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -538,110 +769,50 @@ function ReportCard({
   );
 }
 
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
 export default function Reports() {
   const [downloading, setDownloading] =
     useState(null);
 
-  const downloadExcel = async (key) => {
-    try {
-      setDownloading(`${key}-excel`);
-
-      const res = await api.get(
-        `/reports/${key}`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      const blob = new Blob([res.data], {
-        type:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-
-      const url =
-        window.URL.createObjectURL(blob);
-
-      const a =
-        document.createElement('a');
-
-      a.href = url;
-      a.download = `${getFileName(
-        key
-      )}.xlsx`;
-
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
-
-      toast.success(
-        'Excel report downloaded'
-      );
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message ||
-          'Could not download Excel report'
-      );
-    } finally {
-      setDownloading(null);
-    }
-  };
+  /* =======================================================
+     DOWNLOAD PDF
+  ======================================================= */
 
   const downloadPdf = async (key) => {
     try {
       setDownloading(`${key}-pdf`);
 
-      /*
-       * Fetch the same report data from backend.
-       *
-       * If your backend currently returns Excel from
-       * /reports/:key only, this code first tries to
-       * use the JSON response endpoint pattern.
-       */
+      /* -----------------------------------------------
+         Backend only returns JSON data.
+         PDF is generated completely in frontend.
+      ------------------------------------------------ */
 
-      let data;
+      const response = await api.get(
+        `/reports/${key}`
+      );
 
-      try {
-        const response = await api.get(
-          `/reports/${key}/data`
-        );
-
-        data = response.data;
-      } catch {
-        /*
-         * Fallback:
-         * Try the normal endpoint without blob.
-         *
-         * This works if your backend endpoint can
-         * return JSON based on Accept header.
-         */
-
-        const response = await api.get(
-          `/reports/${key}`,
-          {
-            headers: {
-              Accept: 'application/json',
-            },
-          }
-        );
-
-        data = response.data;
-      }
-
-      const rows = extractRows(data, key);
+      const rows = extractRows(
+        response.data,
+        key
+      );
 
       if (!rows.length) {
         toast.error(
           'No data available for this report'
         );
+
         return;
       }
+
+      /* ---------- Generate PDF ---------- */
 
       generatePdf(key, rows);
 
       toast.success(
-        'PDF report downloaded'
+        'PDF report downloaded successfully'
       );
     } catch (err) {
       console.error(
@@ -658,76 +829,222 @@ export default function Reports() {
     }
   };
 
+  /* =======================================================
+     UI
+  ======================================================= */
+
   return (
     <AppShell title="Reports">
       <div className="space-y-6">
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
+
+        {/* =================================================
+            PAGE HEADER
+        ================================================= */}
+
         <PageHeader
           title="Reports"
-          description="Generate professional Excel and PDF reports from your Success Point CRM data."
+          description="
+            Generate professional PDF reports directly
+            from your Success Point CRM data.
+          "
         />
 
-        {/* =====================================================
-            REPORT SUMMARY BANNER
-        ====================================================== */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-ink-950 via-indigo-950 to-violet-950 p-5 text-white shadow-xl">
-          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-indigo-500/20 blur-2xl" />
+        {/* =================================================
+            PREMIUM SUMMARY BANNER
+        ================================================= */}
 
-          <div className="absolute -bottom-20 left-1/3 h-40 w-40 rounded-full bg-violet-500/20 blur-2xl" />
+        <div
+          className="
+            relative
+            overflow-hidden
+            rounded-2xl
+            bg-gradient-to-br
+            from-ink-950
+            via-indigo-950
+            to-violet-950
+            p-5
+            text-white
+            shadow-xl
+          "
+        >
+          {/* Background Glow */}
 
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div
+            className="
+              absolute
+              -right-16
+              -top-16
+              h-48
+              w-48
+              rounded-full
+              bg-indigo-500/20
+              blur-2xl
+            "
+          />
+
+          <div
+            className="
+              absolute
+              -bottom-20
+              left-1/3
+              h-40
+              w-40
+              rounded-full
+              bg-violet-500/20
+              blur-2xl
+            "
+          />
+
+          <div
+            className="
+              relative
+              flex
+              flex-col
+              gap-5
+              md:flex-row
+              md:items-center
+              md:justify-between
+            "
+          >
+            {/* ---------- Left ---------- */}
+
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 backdrop-blur">
-                <BarChart3 size={24} />
+              <div
+                className="
+                  flex
+                  h-14
+                  w-14
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  border
+                  border-white/10
+                  bg-white/10
+                  shadow-lg
+                  backdrop-blur
+                "
+              >
+                <BarChart3 size={25} />
               </div>
 
               <div>
-                <h2 className="text-lg font-bold">
+                <h2
+                  className="
+                    text-lg
+                    font-bold
+                  "
+                >
                   Business Reports
                 </h2>
 
-                <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/60">
-                  Download your institute's financial,
-                  attendance, lead and expense data in
-                  Excel or professionally formatted PDF.
+                <p
+                  className="
+                    mt-1
+                    max-w-xl
+                    text-xs
+                    leading-relaxed
+                    text-white/60
+                  "
+                >
+                  Generate clean, professional and
+                  print-ready PDF reports for fees,
+                  attendance, leads and expenses.
                 </p>
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur">
-                <p className="text-[9px] uppercase tracking-wider text-white/50">
+            {/* ---------- Right ---------- */}
+
+            <div
+              className="
+                flex
+                shrink-0
+                items-center
+                gap-2
+              "
+            >
+              <div
+                className="
+                  rounded-xl
+                  border
+                  border-white/10
+                  bg-white/10
+                  px-4 py-2.5
+                  backdrop-blur
+                "
+              >
+                <p
+                  className="
+                    text-[9px]
+                    uppercase
+                    tracking-wider
+                    text-white/50
+                  "
+                >
                   Available
                 </p>
 
-                <p className="mt-0.5 text-sm font-bold">
-                  {reports.length} Reports
+                <p
+                  className="
+                    mt-0.5
+                    text-sm
+                    font-bold
+                  "
+                >
+                  {reports.length} PDF Reports
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             REPORT CARDS
-        ====================================================== */}
+        ================================================= */}
+
         <div>
-          <div className="mb-4 flex items-center justify-between">
+          <div
+            className="
+              mb-4
+              flex
+              items-center
+              justify-between
+            "
+          >
             <div>
-              <h3 className="text-sm font-bold text-ink-950">
+              <h3
+                className="
+                  text-sm
+                  font-bold
+                  text-ink-950
+                "
+              >
                 Available Reports
               </h3>
 
-              <p className="mt-0.5 text-xs text-ink-500">
-                Choose Excel for data analysis or PDF for
-                printing and sharing.
+              <p
+                className="
+                  mt-0.5
+                  text-xs
+                  text-ink-500
+                "
+              >
+                Select any report to generate a
+                professional A4 PDF.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            className="
+              grid
+              grid-cols-1
+              gap-4
+              md:grid-cols-2
+              xl:grid-cols-3
+            "
+          >
             {reports.map((report) => (
               <ReportCard
                 key={report.key}
@@ -736,11 +1053,8 @@ export default function Reports() {
                   downloading?.startsWith(
                     report.key
                   )
-                    ? downloading.split('-').pop()
+                    ? 'pdf'
                     : null
-                }
-                onDownloadExcel={() =>
-                  downloadExcel(report.key)
                 }
                 onDownloadPdf={() =>
                   downloadPdf(report.key)
@@ -750,64 +1064,172 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* =====================================================
-            INFORMATION
-        ====================================================== */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-sm">
+        {/* =================================================
+            INFORMATION CARDS
+        ================================================= */}
+
+        <div
+          className="
+            grid
+            grid-cols-1
+            gap-4
+            md:grid-cols-3
+          "
+        >
+          {/* PDF Format */}
+
+          <div
+            className="
+              rounded-2xl
+              border border-ink-100
+              bg-white
+              p-4
+              shadow-sm
+              transition
+              hover:-translate-y-0.5
+              hover:shadow-md
+            "
+          >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <FileSpreadsheet size={18} />
-              </div>
-
-              <div>
-                <p className="text-xs font-bold text-ink-950">
-                  Excel Export
-                </p>
-
-                <p className="mt-0.5 text-[10px] text-ink-500">
-                  Ideal for filtering and analysis
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+              <div
+                className="
+                  flex h-10 w-10
+                  items-center justify-center
+                  rounded-xl
+                  bg-violet-50
+                  text-violet-600
+                "
+              >
                 <FileText size={18} />
               </div>
 
               <div>
-                <p className="text-xs font-bold text-ink-950">
-                  PDF Export
+                <p
+                  className="
+                    text-xs
+                    font-bold
+                    text-ink-950
+                  "
+                >
+                  PDF Format
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-ink-500">
+                <p
+                  className="
+                    mt-0.5
+                    text-[10px]
+                    text-ink-500
+                  "
+                >
                   Professional A4 printable format
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-sm">
+          {/* Frontend Generation */}
+
+          <div
+            className="
+              rounded-2xl
+              border border-ink-100
+              bg-white
+              p-4
+              shadow-sm
+              transition
+              hover:-translate-y-0.5
+              hover:shadow-md
+            "
+          >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <div
+                className="
+                  flex h-10 w-10
+                  items-center justify-center
+                  rounded-xl
+                  bg-indigo-50
+                  text-indigo-600
+                "
+              >
+                <BarChart3 size={18} />
+              </div>
+
+              <div>
+                <p
+                  className="
+                    text-xs
+                    font-bold
+                    text-ink-950
+                  "
+                >
+                  Instant Generation
+                </p>
+
+                <p
+                  className="
+                    mt-0.5
+                    text-[10px]
+                    text-ink-500
+                  "
+                >
+                  PDF created directly in browser
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* No Paid Service */}
+
+          <div
+            className="
+              rounded-2xl
+              border border-ink-100
+              bg-white
+              p-4
+              shadow-sm
+              transition
+              hover:-translate-y-0.5
+              hover:shadow-md
+            "
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  flex h-10 w-10
+                  items-center justify-center
+                  rounded-xl
+                  bg-emerald-50
+                  text-emerald-600
+                "
+              >
                 <CheckCircle2 size={18} />
               </div>
 
               <div>
-                <p className="text-xs font-bold text-ink-950">
+                <p
+                  className="
+                    text-xs
+                    font-bold
+                    text-ink-950
+                  "
+                >
                   No Paid Service
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-ink-500">
-                  Reports generated directly in your CRM
+                <p
+                  className="
+                    mt-0.5
+                    text-[10px]
+                    text-ink-500
+                  "
+                >
+                  Generated using jsPDF
                 </p>
               </div>
             </div>
           </div>
         </div>
+
       </div>
     </AppShell>
   );
