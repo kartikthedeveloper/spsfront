@@ -6,7 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Branches from './pages/Branches';
-import Academics from './pages/Academics';
+import Courses from './pages/Courses';
+import Batches from './pages/Batches';
 import Students from './pages/Students';
 import Fees from './pages/Fees';
 import Attendance from './pages/Attendance';
@@ -33,7 +34,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={page(Dashboard)} />
         <Route path="/branches" element={page(Branches, ['admin'])} />
-        <Route path="/academics" element={page(Academics)} />
+        <Route path="/courses" element={page(Courses)} />
+<Route path="/batches" element={page(Batches)} />
         <Route path="/students" element={page(Students)} />
         <Route path="/fees" element={page(Fees)} />
         <Route path="/attendance" element={page(Attendance)} />

@@ -19,7 +19,8 @@ import { useAuth } from '../context/AuthContext';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/branches', label: 'Branches', icon: Building2, roles: ['admin'] },
-  { to: '/academics', label: 'Courses & Batches', icon: GraduationCap, roles: ['admin', 'branch_manager', 'staff'] },
+  { to: '/courses', label: 'Courses', icon: GraduationCap, roles: ['admin', 'branch_manager', 'staff'] },
+  { to: '/batches', label: 'Batches', icon: GraduationCap, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/students', label: 'Students', icon: Users, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/fees', label: 'Fee Management', icon: Wallet, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['admin', 'branch_manager', 'staff'] },
