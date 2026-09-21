@@ -145,7 +145,7 @@ export default function Students() {
   const [createForm, setCreateForm] = useState(initialCreateForm);
   const [editForm, setEditForm] = useState({});
 
-  // Documents
+  // Documentss
   const [docName, setDocName] = useState('');
   const [docUrl, setDocUrl] = useState('');
 
@@ -870,52 +870,7 @@ export default function Students() {
               `}
             >
 
-              {/* Search */}
-
-              <div className="relative sm:col-span-2 lg:col-span-1 xl:col-span-2">
-      
-                <input
-                  className="
-                    input
-                    w-full
-                    pl-10
-                    h-11
-                    rounded-xl
-                    border-ink-200
-                    focus:border-ink-400
-                    focus:ring-4
-                    focus:ring-ink-100
-                    transition
-                  "
-                  placeholder="Search name, phone or admission ID..."
-                  value={filters.search}
-                  onChange={(e) =>
-                    updateFilter(
-                      'search',
-                      e.target.value
-                    )
-                  }
-                />
-              </div>
-
-              {/* Branch */}
-
-              {user?.role === 'admin' && (
-                <FilterSelect
-                  value={filters.branch}
-                  onChange={(value) =>
-                    updateFilter('branch', value)
-                  }
-                  options={branches}
-                  placeholder="All Branches"
-                  icon={<Building2 size={15} />}
-                  valueKey="_id"
-                  labelKey="name"
-                />
-              )}
-
-              {/* Course */}
-
+             
               <FilterSelect
                 value={filters.course}
                 onChange={(value) =>
