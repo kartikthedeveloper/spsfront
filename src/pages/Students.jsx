@@ -93,6 +93,8 @@ const initialCreateForm = {
   course: '',
   batch: '',
   totalFee: 0,
+  discountPercent: 0,
+  universityFee: 0,
   discount: 0,
   admissionStatus: 'confirmed',
   leadSource: '',
@@ -145,7 +147,7 @@ export default function Students() {
   const [createForm, setCreateForm] = useState(initialCreateForm);
   const [editForm, setEditForm] = useState({});
 
-  // Documentss
+  // Documents
   const [docName, setDocName] = useState('');
   const [docUrl, setDocUrl] = useState('');
 
@@ -280,6 +282,10 @@ export default function Students() {
 
     try {
       const payload = { ...createForm };
+      delete payload.discount;
+      payload.discountPercent = Number(payload.discountPercent || 0);
+      payload.universityFee = Number(payload.universityFee || 0);
+      payload.totalFee = Number(payload.totalFee || 0);
 
       if (user.role !== 'admin') {
         delete payload.branch;
@@ -365,6 +371,10 @@ export default function Students() {
       delete payload.createdAt;
       delete payload.updatedAt;
       delete payload.__v;
+      delete payload.discount;
+      payload.discountPercent = Number(payload.discountPercent || 0);
+      payload.universityFee = Number(payload.universityFee || 0);
+      payload.totalFee = Number(payload.totalFee || 0);
 
       if (user.role !== 'admin') {
         delete payload.branch;
@@ -870,7 +880,52 @@ export default function Students() {
               `}
             >
 
-             
+              {/* Search */}
+
+              <div className="relative sm:col-span-2 lg:col-span-1 xl:col-span-2">
+      
+                <input
+                  className="
+                    input
+                    w-full
+                    pl-10
+                    h-11
+                    rounded-xl
+                    border-ink-200
+                    focus:border-ink-400
+                    focus:ring-4
+                    focus:ring-ink-100
+                    transition
+                  "
+                  placeholder="Search name, phone or admission ID..."
+                  value={filters.search}
+                  onChange={(e) =>
+                    updateFilter(
+                      'search',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              {/* Branch */}
+
+              {user?.role === 'admin' && (
+                <FilterSelect
+                  value={filters.branch}
+                  onChange={(value) =>
+                    updateFilter('branch', value)
+                  }
+                  options={branches}
+                  placeholder="All Branches"
+                  icon={<Building2 size={15} />}
+                  valueKey="_id"
+                  labelKey="name"
+                />
+              )}
+
+              {/* Course */}
+
               <FilterSelect
                 value={filters.course}
                 onChange={(value) =>
@@ -1728,39 +1783,18 @@ export default function Students() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               <FormField label="Total Fee (₹)">
-                <input
-                  type="number"
-                  min="0"
-                  className="input"
-                  value={createForm.totalFee}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      totalFee:
-                        parseFloat(
-                          e.target.value
-                        ) || 0,
-                    })
-                  }
-                />
+                <input type="number" min="0" className="input" value={createForm.totalFee}
+                  onChange={(e) => setCreateForm({...createForm,totalFee:parseFloat(e.target.value)||0})}/>
               </FormField>
 
-              <FormField label="Discount (₹)">
-                <input
-                  type="number"
-                  min="0"
-                  className="input"
-                  value={createForm.discount}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      discount:
-                        parseFloat(
-                          e.target.value
-                        ) || 0,
-                    })
-                  }
-                />
+              <FormField label="Discount (%)">
+                <input type="number" min="0" max="100" className="input" value={createForm.discountPercent}
+                  onChange={(e) => setCreateForm({...createForm,discountPercent:parseFloat(e.target.value)||0})}/>
+              </FormField>
+
+              <FormField label="University Fee (₹)">
+                <input type="number" min="0" className="input" value={createForm.universityFee}
+                  onChange={(e) => setCreateForm({...createForm,universityFee:parseFloat(e.target.value)||0})}/>
               </FormField>
 
             </div>
@@ -1781,12 +1815,24 @@ export default function Students() {
 
               <span className="text-xl font-bold text-ink-950">
                 ₹
-                {Math.max(
-                  0,
-                  Number(createForm.totalFee || 0) -
-                    Number(createForm.discount || 0)
+                {Math.max(0, Number(createForm.totalFee || 0) -
+                  Math.round(Number(createForm.totalFee || 0) * Number(createForm.discountPercent || 0) / 100)
                 ).toLocaleString('en-IN')}
               </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-violet-50 border border-violet-100 p-3">
+                <p className="text-[11px] text-violet-500">University Share</p>
+                <p className="font-bold text-violet-800">₹{Number(createForm.universityFee || 0).toLocaleString('en-IN')}</p>
+              </div>
+              <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
+                <p className="text-[11px] text-emerald-500">Institute Share</p>
+                <p className="font-bold text-emerald-800">₹{Math.max(0,
+                  Math.max(0, Number(createForm.totalFee || 0) - Math.round(Number(createForm.totalFee || 0) * Number(createForm.discountPercent || 0) / 100))
+                  - Number(createForm.universityFee || 0)
+                ).toLocaleString('en-IN')}</p>
+              </div>
             </div>
 
           </FormSection>
@@ -3145,27 +3191,15 @@ function StudentView({
         title="Fee Information"
       >
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-
-          <FeeCard
-            label="Total Fee"
-            value={student.totalFee}
-          />
-
-          <FeeCard
-            label="Discount"
-            value={student.discount}
-          />
-
-          <FeeCard
-            label="Final Fee"
-            value={Math.max(
-              0,
-              Number(student.totalFee || 0) -
-                Number(student.discount || 0)
-            )}
-          />
-
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <FeeCard label="Total Fee" value={student.totalFee}/>
+          <FeeCard label="Discount" value={student.discount}/>
+          <FeeCard label="Net Fee" value={student.netFee}/>
+          <FeeCard label="University Fee" value={student.universityFee}/>
+          <FeeCard label="Institute Fee" value={student.instituteFee}/>
+        </div>
+        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs text-slate-500">
+          Discount: <b>{Number(student.discountPercent || 0)}%</b> · University share: <b>₹{Number(student.universityFee || 0).toLocaleString('en-IN')}</b> · Institute share: <b>₹{Number(student.instituteFee || 0).toLocaleString('en-IN')}</b>
         </div>
 
       </ProfileSection>
@@ -3694,22 +3728,16 @@ function StudentEditForm({
             />
           </FormField>
 
-          <FormField label="Discount (₹)">
-            <input
-              type="number"
-              min="0"
-              className="input"
-              value={editForm.discount || 0}
-              onChange={(e) =>
-                setEditForm({
-                  ...editForm,
-                  discount:
-                    parseFloat(
-                      e.target.value
-                    ) || 0,
-                })
-              }
-            />
+          <FormField label="Discount (%)">
+            <input type="number" min="0" max="100" className="input"
+              value={editForm.discountPercent || 0}
+              onChange={(e) => setEditForm({...editForm,discountPercent:parseFloat(e.target.value)||0})}/>
+          </FormField>
+
+          <FormField label="University Fee (₹)">
+            <input type="number" min="0" className="input"
+              value={editForm.universityFee || 0}
+              onChange={(e) => setEditForm({...editForm,universityFee:parseFloat(e.target.value)||0})}/>
           </FormField>
 
         </div>
@@ -3734,7 +3762,7 @@ function StudentEditForm({
             {Math.max(
               0,
               Number(editForm.totalFee || 0) -
-                Number(editForm.discount || 0)
+                Math.round(Number(editForm.totalFee || 0) * Number(editForm.discountPercent || 0) / 100)
             ).toLocaleString('en-IN')}
           </span>
         </div>
