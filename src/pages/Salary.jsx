@@ -118,15 +118,17 @@ export default function Salary() {
 
       <Modal open={open} onClose={() => setOpen(false)} title="Generate Salary">
         <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="label">Staff Member</label>
-            <select className="input" required value={form.staff} onChange={(e) => setForm({ ...form, staff: e.target.value })}>
-              <option value="">Select staff</option>
-              {staffList.filter((u) => u.role !== 'student').map((u) => (
-                <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
-              ))}
-            </select>
-          </div>
+         <div>
+  <label className="label">Staff Member</label>
+  <input
+    type="text"
+    className="input"
+    required
+    placeholder="Enter staff name"
+    value={form.staff}
+    onChange={(e) => setForm({ ...form, staff: e.target.value })}
+  />
+</div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Month</label>
