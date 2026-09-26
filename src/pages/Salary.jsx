@@ -80,10 +80,8 @@ export default function Salary() {
                 <th className="px-4 py-3">Staff</th>
                 <th className="px-4 py-3">Month</th>
                 <th className="px-4 py-3">Base</th>
-                <th className="px-4 py-3">KPI</th>
                 <th className="px-4 py-3">Net Salary</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -92,24 +90,11 @@ export default function Salary() {
                   <td className="px-4 py-3 font-medium text-ink-950">{s.staff?.name}</td>
                   <td className="px-4 py-3 text-ink-700">{monthNames[s.month - 1]} {s.year}</td>
                   <td className="px-4 py-3 text-ink-700">₹{s.baseSalary.toLocaleString('en-IN')}</td>
-                  <td className="px-4 py-3 text-ink-700">{s.kpiScore}%</td>
                   <td className="px-4 py-3 font-semibold text-ink-950">₹{s.netSalary.toLocaleString('en-IN')}</td>
                   <td className="px-4 py-3">
                     <Badge tone={s.status === 'paid' ? 'sage' : 'marigold'}>{s.status}</Badge>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <a href={`${api.defaults.baseURL}/salaries/${s._id}/slip`} target="_blank" rel="noreferrer" className="btn-ghost !px-2 !py-1">
-                        <FileDown size={14} />
-                      </a>
-                      {s.status !== 'paid' && (
-                        <button onClick={() => markPaid(s._id)} className="btn-ghost !px-2 !py-1" title="Mark paid">
-                          <CheckCircle2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                  </tr>
               ))}
             </tbody>
           </table>
