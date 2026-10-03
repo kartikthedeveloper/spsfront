@@ -24,6 +24,10 @@ import {
   CheckCircle2,
   CircleDot,
   MoreHorizontal,
+  Edit3,
+  Trash2,
+  Save,
+  MessageSquare,
 } from 'lucide-react';
 
 import AppShell from '../components/AppShell';
@@ -116,11 +120,16 @@ const stageColors = {
 const initialForm = {
   fullName: '',
   phone: '',
+  altPhone: '',
   email: '',
   source: 'website',
   priority: 'warm',
+  stage: 'new',
   branch: '',
   interestedCourse: '',
+  budgetRange: '',
+  followUpAt: '',
+  customMessage: '',
 };
 
 function getInitials(name = '') {
@@ -297,6 +306,10 @@ export default function Leads() {
   const [board, setBoard] = useState({});
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(initialForm);
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [branches, setBranches] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -415,6 +428,117 @@ export default function Leads() {
 
     return grouped;
   }, [filteredLeads]);
+
+  const updateEditField = (field, value) => {
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const openEdit = () => {
+    if (!detail?.lead) return;
+
+    const lead = detail.lead;
+
+    setEditForm({
+      fullName: lead.fullName || '',
+      phone: lead.phone || '',
+      altPhone: lead.altPhone || '',
+      email: lead.email || '',
+      source: lead.source || 'website',
+      priority: lead.priority || 'warm',
+      stage: lead.stage || 'new',
+      branch: lead.branch?._id || lead.branch || '',
+      interestedCourse:
+        lead.interestedCourse?._id ||
+        lead.interestedCourse ||
+        '',
+      budgetRange: lead.budgetRange || '',
+      followUpAt: lead.followUpAt
+        ? new Date(lead.followUpAt).toISOString().slice(0, 16)
+        : '',
+      customMessage: lead.customMessage || '',
+    });
+
+    setEditOpen(true);
+  };
+
+  const updateLead = async (e) => {
+    e.preventDefault();
+
+    if (!detail?.lead?._id) return;
+
+    try {
+      setEditSaving(true);
+
+      const payload = {
+        fullName: editForm.fullName.trim(),
+        phone: editForm.phone.trim(),
+        altPhone: editForm.altPhone.trim(),
+        email: editForm.email.trim(),
+        source: editForm.source,
+        priority: editForm.priority,
+        stage: editForm.stage,
+        interestedCourse:
+          editForm.interestedCourse || null,
+        budgetRange: editForm.budgetRange.trim(),
+        followUpAt: editForm.followUpAt || null,
+        customMessage: editForm.customMessage.trim(),
+      };
+
+      await api.patch(
+        `/leads/${detail.lead._id}`,
+        payload
+      );
+
+      toast.success('Lead updated successfully');
+
+      setEditOpen(false);
+
+      await load();
+      await openDetail(detail.lead._id);
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          'Could not update lead'
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const deleteLead = async () => {
+    if (!detail?.lead?._id || deleting) return;
+
+    const confirmed = window.confirm(
+      `Delete lead "${detail.lead.fullName}"? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+
+      await api.delete(
+        `/leads/${detail.lead._id}`
+      );
+
+      toast.success('Lead deleted successfully');
+
+      setDetail(null);
+      setEditOpen(false);
+
+      await load();
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          'Could not delete lead'
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -929,6 +1053,23 @@ export default function Leads() {
                 />
               </div>
 
+              {/* Alternate Phone */}
+              <div>
+                <label className="label">Alternate Phone</label>
+                <input
+                  className="input"
+                  type="tel"
+                  placeholder="Enter alternate phone number"
+                  value={form.altPhone}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      altPhone: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
               {/* Email */}
               <div>
                 <label className="label">Email</label>
@@ -1059,6 +1200,62 @@ export default function Leads() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="label">Budget Range</label>
+                <input
+                  className="input"
+                  placeholder="e.g. ₹20,000 - ₹30,000"
+                  value={form.budgetRange}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      budgetRange: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  Follow-up Date & Time
+                </label>
+                <input
+                  className="input"
+                  type="datetime-local"
+                  value={form.followUpAt}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      followUpAt: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              {/* Custom WhatsApp Message */}
+              <div className="mt-4">
+                <label className="label flex items-center gap-2">
+                  <MessageSquare size={14} />
+                  Custom WhatsApp Message
+                </label>
+
+                <textarea
+                  className="input min-h-[110px] resize-y"
+                  placeholder="Write the message that should open when WhatsApp is clicked..."
+                  value={form.customMessage}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      customMessage: e.target.value,
+                    })
+                  }
+                />
+
+                <p className="mt-1.5 text-[11px] text-ink-400">
+                  Leave empty to use the default Success Point message.
+                </p>
+              </div>
             </div>
 
             {/* Footer */}
@@ -1089,6 +1286,324 @@ export default function Leads() {
                   <span className="flex items-center justify-center gap-2">
                     <Plus size={15} />
                     Capture Lead
+                  </span>
+                )}
+              </button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* =========================================================
+            EDIT LEAD MODAL
+        ========================================================== */}
+        <Modal
+          open={editOpen}
+          onClose={() => {
+            if (!editSaving) setEditOpen(false);
+          }}
+          title="Edit Lead"
+          wide
+        >
+          <form onSubmit={updateLead}>
+            <div className="mb-5 rounded-2xl bg-gradient-to-r from-indigo-50 via-violet-50 to-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+                  <Edit3 size={19} />
+                </div>
+
+                <div>
+                  <p className="font-bold text-ink-950">
+                    Update Lead
+                  </p>
+                  <p className="text-xs text-ink-500">
+                    Update enquiry information and WhatsApp message.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="label">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="input"
+                  required
+                  value={editForm.fullName}
+                  onChange={(e) =>
+                    updateEditField(
+                      'fullName',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="input"
+                  required
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) =>
+                    updateEditField(
+                      'phone',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  Alternate Phone
+                </label>
+                <input
+                  className="input"
+                  type="tel"
+                  value={editForm.altPhone}
+                  onChange={(e) =>
+                    updateEditField(
+                      'altPhone',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="label">Email</label>
+                <input
+                  className="input"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) =>
+                    updateEditField(
+                      'email',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="label">Lead Source</label>
+                <select
+                  className="input"
+                  value={editForm.source}
+                  onChange={(e) =>
+                    updateEditField(
+                      'source',
+                      e.target.value
+                    )
+                  }
+                >
+                  {Object.entries(sourceLabels).map(
+                    ([value, label]) => (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {label}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="label">Priority</label>
+                <select
+                  className="input"
+                  value={editForm.priority}
+                  onChange={(e) =>
+                    updateEditField(
+                      'priority',
+                      e.target.value
+                    )
+                  }
+                >
+                  <option value="hot">
+                    Hot — Immediate
+                  </option>
+                  <option value="warm">
+                    Warm — Follow-up
+                  </option>
+                  <option value="cold">
+                    Cold — Nurture
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="label">Stage</label>
+                <select
+                  className="input"
+                  value={editForm.stage}
+                  onChange={(e) =>
+                    updateEditField(
+                      'stage',
+                      e.target.value
+                    )
+                  }
+                >
+                  {stages.map((stage) => (
+                    <option
+                      key={stage.key}
+                      value={stage.key}
+                    >
+                      {stage.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="label">
+                  Interested Course
+                </label>
+                <select
+                  className="input"
+                  value={editForm.interestedCourse}
+                  onChange={(e) =>
+                    updateEditField(
+                      'interestedCourse',
+                      e.target.value
+                    )
+                  }
+                >
+                  <option value="">
+                    Not specified
+                  </option>
+
+                  {courses.map((course) => (
+                    <option
+                      key={course._id}
+                      value={course._id}
+                    >
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="label">
+                  Budget Range
+                </label>
+                <input
+                  className="input"
+                  placeholder="e.g. ₹20,000 - ₹30,000"
+                  value={editForm.budgetRange}
+                  onChange={(e) =>
+                    updateEditField(
+                      'budgetRange',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  Follow-up Date & Time
+                </label>
+                <input
+                  className="input"
+                  type="datetime-local"
+                  value={editForm.followUpAt}
+                  onChange={(e) =>
+                    updateEditField(
+                      'followUpAt',
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              {user.role === 'admin' && (
+                <div>
+                  <label className="label">
+                    Branch
+                  </label>
+                  <select
+                    className="input"
+                    value={editForm.branch}
+                    onChange={(e) =>
+                      updateEditField(
+                        'branch',
+                        e.target.value
+                      )
+                    }
+                  >
+                    <option value="">
+                      Current Branch
+                    </option>
+
+                    {branches.map((branch) => (
+                      <option
+                        key={branch._id}
+                        value={branch._id}
+                      >
+                        {branch.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="md:col-span-2">
+                <label className="label flex items-center gap-2">
+                  <MessageSquare size={14} />
+                  Custom WhatsApp Message
+                </label>
+
+                <textarea
+                  className="input min-h-[130px] resize-y"
+                  placeholder="Write your custom WhatsApp message..."
+                  value={editForm.customMessage}
+                  onChange={(e) =>
+                    updateEditField(
+                      'customMessage',
+                      e.target.value
+                    )
+                  }
+                />
+
+                <p className="mt-1.5 text-[11px] text-ink-400">
+                  If empty, the default Success Point message will be used.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-ink-100 pt-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={editSaving}
+                onClick={() => setEditOpen(false)}
+                className="btn border border-ink-200 bg-white text-ink-700 hover:bg-ink-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={editSaving}
+                className="btn-primary min-w-[150px]"
+              >
+                {editSaving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Saving...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Save size={15} />
+                    Save Changes
                   </span>
                 )}
               </button>
@@ -1274,6 +1789,35 @@ export default function Leads() {
                   </div>
                 </div>
 
+                {/* Custom WhatsApp Message */}
+                <div className="rounded-2xl border border-ink-100 bg-gradient-to-br from-emerald-50/70 to-white p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                      <MessageSquare size={15} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-ink-950">
+                        WhatsApp Message
+                      </h3>
+                      <p className="text-[10px] text-ink-400">
+                        Message used for the WhatsApp button
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-100 bg-white p-3">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-700">
+                      {detail.lead.customMessage?.trim() ||
+                        detail.whatsappMessage ||
+                        `Hi ${detail.lead.fullName}, this is Success Point regarding your enquiry about ${
+                          detail.lead.interestedCourse?.name ||
+                          'our courses'
+                        }.`}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 border-y border-ink-100 py-4">
                   {detail.whatsappLink && (
@@ -1288,6 +1832,15 @@ export default function Leads() {
                     </a>
                   )}
 
+                  <button
+                    type="button"
+                    onClick={openEdit}
+                    className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                  >
+                    <Edit3 size={16} />
+                    Edit Lead
+                  </button>
+
                   {detail.lead.stage !== 'converted' &&
                     detail.lead.stage !== 'lost' && (
                       <button
@@ -1299,6 +1852,16 @@ export default function Leads() {
                         Convert to Student
                       </button>
                     )}
+
+                  <button
+                    type="button"
+                    onClick={deleteLead}
+                    disabled={deleting}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Trash2 size={16} />
+                    {deleting ? 'Deleting...' : 'Delete Lead'}
+                  </button>
                 </div>
 
                 {/* Notes */}
