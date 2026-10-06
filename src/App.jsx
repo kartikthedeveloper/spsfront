@@ -17,6 +17,7 @@ import Salary from './pages/Salary';
 import Reports from './pages/Reports';
 import Campaigns from './pages/Campaigns';
 import Settings from './pages/Settings';
+import Messages from './pages/Messages';
 
 // Each page component wraps itself in <AppShell> (sidebar + topbar), so
 // here we only need to apply route protection / role gating.
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/reports" element={page(Reports, ['admin', 'branch_manager'])} />
         <Route path="/campaigns" element={page(Campaigns, ['admin', 'branch_manager'])} />
         <Route path="/settings" element={page(Settings, ['admin'])} />
+        <Route path="/messages" element={page(Messages, ['admin', 'branch_manager'])} />
       </Routes>
     </>
   );
