@@ -388,7 +388,7 @@ export default function Dashboard() {
             GENERAL SUMMARY
         ================================================= */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
 
           <StatCard
             label="Total Students"
@@ -448,7 +448,7 @@ export default function Dashboard() {
           </p>
 
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
 
 
             {/* COLLECTION */}
@@ -460,6 +460,7 @@ export default function Dashboard() {
               )}
               icon={Banknote}
               tone="sage"
+            
             />
 
 
@@ -507,24 +508,25 @@ export default function Dashboard() {
             FINANCE BOXES
         ================================================= */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
 
           <FinanceBox
             icon={ArrowDownRight}
-            label="Total Outflow"
+            label="Total Cash Outflow"
             value={money(
               financial.totalOutflow
             )}
+            danger
           />
 
-
+{/* 
           <FinanceBox
             icon={ArrowUpRight}
             label="Balance After University"
             value={money(
               financial.balanceAfterUniversity
             )}
-          />
+          /> */}
 
 
           <FinanceBox
@@ -539,14 +541,11 @@ export default function Dashboard() {
 
           <FinanceBox
             icon={CalendarDays}
-            label={
-              month === null
-                ? 'Year Collection'
-                : 'Month Collection'
-            }
+            label="Total Salary Paid"
             value={money(
-              collections.period
+                  financial.totalSalaryPaid
             )}
+            danger
           />
 
         </div>
@@ -586,6 +585,13 @@ export default function Dashboard() {
                 label="Student Collection"
                 value={money(
                   financial.totalCollection
+                )}
+              />
+                  <Row
+                icon={Banknote}
+                label="Total Salary Paid"
+                value={money(
+                  financial.totalSalaryPaid
                 )}
               />
 
