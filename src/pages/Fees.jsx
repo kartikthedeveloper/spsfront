@@ -711,11 +711,7 @@ export default function Fees() {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
 
-      drawText('Previous Balance', 11, 155);
-      drawText(receiptMoney(previousBalance), 137, 155, {
-        align: 'right'
-      });
-
+    
       drawText('Amount Paid', 11, 162);
       drawText(receiptMoney(payment.amountPaid), 137, 162, {
         align: 'right'
