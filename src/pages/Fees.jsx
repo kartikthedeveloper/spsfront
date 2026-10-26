@@ -561,10 +561,10 @@ export default function Fees() {
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      drawText('Professional Training & Education', 77, 21, {
+      drawText('Piprali Rd, Opp. M.K. Memorial Sr. Sec. School,', 77, 21, {
         align: 'center'
       });
-      drawText('Sikar, Rajasthan', 77, 25, { align: 'center' });
+      drawText('Sikar, Rajasthan 332001', 77, 25, { align: 'center' });
 
       drawLine(10, 31, 138, 31, 0.7);
 
