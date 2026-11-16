@@ -106,11 +106,7 @@ export default function Sidebar() {
       {/* ================= NAVIGATION ================= */}
       <nav className="relative flex-1 overflow-y-auto px-4 py-2 space-y-1 scrollbar-thin scrollbar-thumb-white/10">
         {/* Section label */}
-        <div className="px-3 pb-3 pt-1">
-          <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-white/30">
-            Main Menu
-          </span>
-        </div>
+
 
         {visible.map(({ to, label, icon: Icon }) => (
           <NavLink
