@@ -28,6 +28,7 @@ const navItems = [
   { to: '/leads', label: 'Leads', icon: Target, roles: ['admin', 'branch_manager', 'staff'] },
   { to: '/messages', label: 'Messages', icon: MessageCircle, roles: ['admin', 'branch_manager'] },
   { to: '/expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'branch_manager', 'staff'] },
+  { to: '/staff', label: 'Staff', icon: Users, roles: ['admin'] },
   { to: '/salary', label: 'Salary', icon: Banknote, roles: ['admin', 'branch_manager'] },
   { to: '/reports', label: 'Reports', icon: FileBarChart, roles: ['admin', 'branch_manager'] },
   // { to: '/campaigns', label: 'Campaigns', icon: Megaphone, roles: ['admin', 'branch_manager'] },
