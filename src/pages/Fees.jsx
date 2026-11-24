@@ -208,31 +208,170 @@ export default function Fees() {
     }
   };
 
-  const downloadReceipt = payment => {
+  const downloadReceipt = async payment => {
     try {
-      const doc = new jsPDF();
       const st = payment.student || {};
-      doc.setFontSize(18);
-      doc.text('SUCCESS POINT SIKAR', 105, 20, { align: 'center' });
+      const studentId = st._id || payment.student;
+      let feeDetails = null;
+
+      // Fetch the latest fee summary so the receipt shows the correct balance
+      // after this payment has been recorded.
+      if (studentId) {
+        try {
+          const response = await api.get(`/fees/student/${studentId}`);
+          feeDetails = response.data;
+        } catch (error) {
+          console.warn('Could not fetch latest fee balance for receipt', error);
+        }
+      }
+
+      const fee = feeDetails?.fee || {};
+      const studentPayment = feeDetails?.studentPayment || {};
+      const student = feeDetails?.student || st;
+      const totalFee = Number(fee.netFee ?? student.netFee ?? student.totalFee ?? 0);
+      const totalPaid = Number(studentPayment.paid ?? student.studentPaid ?? 0);
+      const currentPayment = Number(payment.amountPaid || 0);
+      const previousPaid = Math.max(totalPaid - currentPayment, 0);
+      const remainingBalance = Number(
+        studentPayment.pending ??
+        student.studentPending ??
+        Math.max(totalFee - totalPaid, 0)
+      );
+      const paymentDate = payment.paymentDate
+        ? new Date(payment.paymentDate).toLocaleDateString('en-IN')
+        : new Date().toLocaleDateString('en-IN');
+      const receiptNo = payment.receiptNumber || payment._id || '—';
+      const course = student.course?.name || courseName(student.course);
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 16;
+      const right = pageWidth - margin;
+
+      // Premium receipt header
+      doc.setFillColor(18, 35, 58);
+      doc.rect(0, 0, pageWidth, 48, 'F');
+      doc.setFillColor(238, 145, 47);
+      doc.rect(0, 46, pageWidth, 2, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.text('SUCCESS POINT SIKAR', margin, 18);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(218, 226, 236);
+      doc.text('STUDENT FEE COLLECTION', margin, 25);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.setTextColor(255, 255, 255);
+      doc.text('PAYMENT RECEIPT', right, 19, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(218, 226, 236);
+      doc.text(`Receipt No: ${receiptNo}`, right, 27, { align: 'right' });
+      doc.text(`Date: ${paymentDate}`, right, 33, { align: 'right' });
+
+    
+      // Student information
+      doc.setTextColor(18, 35, 58);
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text('Student Fee Payment Receipt', 105, 28, { align: 'center' });
+      doc.text('STUDENT DETAILS', margin, 96);
+
       autoTable(doc, {
-        startY: 38,
-        head: [['Field', 'Details']],
-        body: [
-          ['Receipt No.', payment.receiptNumber || '—'],
-          ['Student', st.name || '—'],
-          ['Admission ID', st.admissionId || '—'],
-          ['Course', st.course?.name || courseName(st.course)],
-          ['Amount', money(payment.amountPaid)],
-          ['Payment Mode', modes[payment.paymentMode] || payment.paymentMode],
-          ['Date', payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-IN') : '—'],
-          ['Transaction Ref', payment.transactionRef || '—'],
-          ['Installment', payment.installmentLabel || '—']
-        ]
+        startY: 100,
+        theme: 'grid',
+        margin: { left: margin, right: margin },
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 3.2, textColor: [45, 55, 72], lineColor: [224, 230, 237], lineWidth: 0.2 },
+        headStyles: { fillColor: [241, 245, 249], textColor: [18, 35, 58], fontStyle: 'bold' },
+        head: [['Student Name', 'Admission ID']],
+        body: [[student.name || '—', student.admissionId || '—']],
       });
-      doc.save(`SuccessPoint_Receipt_${payment.receiptNumber || payment._id}.pdf`);
+
+      const studentTableEnd = doc.lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: studentTableEnd + 3,
+        theme: 'grid',
+        margin: { left: margin, right: margin },
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 3.2, textColor: [45, 55, 72], lineColor: [224, 230, 237], lineWidth: 0.2 },
+        headStyles: { fillColor: [241, 245, 249], textColor: [18, 35, 58], fontStyle: 'bold' },
+        head: [['Course / Programme', 'Installment']],
+        body: [[course || '—', payment.installmentLabel || '—']],
+      });
+
+      // Payment and balance statement
+      const detailsEnd = doc.lastAutoTable.finalY;
+      doc.setTextColor(18, 35, 58);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('FEE PAYMENT SUMMARY', margin, detailsEnd + 13);
+
+      autoTable(doc, {
+        startY: detailsEnd + 17,
+        theme: 'grid',
+        margin: { left: margin, right: margin },
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 3.5, textColor: [45, 55, 72], lineColor: [224, 230, 237], lineWidth: 0.2 },
+        body: [
+          ['Total Course Fee', money(totalFee)],
+          ['Paid Before This Receipt', money(previousPaid)],
+          ['Amount Received Now', money(currentPayment)],
+          ['Total Fee Paid', money(totalPaid || (previousPaid + currentPayment))],
+          // ['REMAINING BALANCE', money(remainingBalance)],
+        ],
+        columnStyles: {
+          0: { cellWidth: 120 },
+          1: { halign: 'right', fontStyle: 'bold' },
+        },
+        didParseCell: data => {
+          if (data.section === 'body' && data.row.index === 4) {
+            data.cell.styles.fillColor = [255, 245, 235];
+            data.cell.styles.textColor = [166, 75, 20];
+            data.cell.styles.fontStyle = 'bold';
+          }
+          if (data.section === 'body' && data.row.index === 2) {
+            data.cell.styles.fillColor = [240, 249, 244];
+            data.cell.styles.textColor = [22, 101, 52];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        },
+      });
+
+      const summaryEnd = doc.lastAutoTable.finalY;
+      if (payment.transactionRef || payment.remarks) {
+        autoTable(doc, {
+          startY: summaryEnd + 5,
+          theme: 'plain',
+          margin: { left: margin, right: margin },
+          styles: { font: 'helvetica', fontSize: 8, cellPadding: 2, textColor: [91, 105, 121] },
+          body: [
+            ...(payment.transactionRef ? [['Transaction Reference', payment.transactionRef]] : []),
+            ...(payment.remarks ? [['Remarks', payment.remarks]] : []),
+          ],
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 48 } },
+        });
+      }
+
+      const footerY = Math.min(doc.lastAutoTable.finalY + 15, 275);
+      doc.setDrawColor(220, 226, 234);
+      doc.line(margin, footerY, right, footerY);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(110, 120, 135);
+      doc.text('This is a computer-generated fee receipt.', margin, footerY + 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(18, 35, 58);
+      doc.text('Thank you for choosing Success Point Sikar!', right, footerY + 6, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(110, 120, 135);
+      doc.text('Authorized Signature', right, footerY + 19, { align: 'right' });
+      doc.setDrawColor(170, 180, 192);
+      doc.line(right - 38, footerY + 15, right, footerY + 15);
+
+      doc.save(`SuccessPoint_Receipt_${receiptNo}.pdf`);
     } catch (e) {
+      console.error(e);
       toast.error('Could not generate receipt');
     }
   };
